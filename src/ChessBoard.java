@@ -23,10 +23,10 @@ public class ChessBoard {
         TrackOfPieces.put(squares[6][0],new Piece(1, 6, 0, 2)); //Black Knight at g8
         TrackOfPieces.put(squares[7][0],new Piece(1, 7, 0, 4)); //Black Rook at h8
         for (int i = 0; i < 8; i++) {
-            TrackOfPieces.put(squares[i][1], new Piece(1, i, 1, 1)); //Black Pawns // Black Pawns
+            TrackOfPieces.put(squares[i][1], new Piece(1, i, 1, 1)); //Black Pawns
         }
 
-        // White pieces
+        //White pieces
         TrackOfPieces.put(squares[0][7],new Piece(0, 0, 7, 4)); //White Rook at a1
         TrackOfPieces.put(squares[1][7],new Piece(0, 1, 7, 2)); //White Knight at b1
         TrackOfPieces.put(squares[2][7],new Piece(0, 2, 7, 3)); //White Bishop at c1
@@ -39,74 +39,75 @@ public class ChessBoard {
             TrackOfPieces.put(squares[i][6], new Piece(0, i, 6, 1));  //White Pawns
         }
     }
-
     public void changeTurn() {
         currentTurn = (currentTurn == 0) ? 1 : 0; //Move parity {0: White to Move, 1: Black to Move}
     }
-
     public boolean movePiece(Square fromSquare, Square toSquare) {
         Piece piece = getPieceAt(fromSquare.getPosX(), fromSquare.getPosY());
         if (piece != null && piece.getColor() == currentTurn) {
-            // Check if the move is valid based on the piece's possible moves
-            // If valid, perform the move, remove/capture the piece if needed, and change turn
-            MoveUpdate(fromSquare.getPosX(), fromSquare.getPosY(), toSquare.getPosX(), toSquare.getPosY());
-            return true; // Return true if move is successful
+            List<Square> possibleMoves = getPotentialMovesForPiece(fromSquare.getPosX(), fromSquare.getPosY());
+            //Check if the move is in the list of possible moves
+            if (possibleMoves.contains(toSquare)) {
+                MoveUpdate(fromSquare.getPosX(), fromSquare.getPosY(), toSquare.getPosX(), toSquare.getPosY());
+                changeTurn();
+                return true; //Return true if move is successful
+            }
         }
-        return false;
+        return false; //Return false if move is not successful or not allowed
     }
-
+    public Square getSquares(int x, int y) {
+        return squares[x][y];
+    }
     public void MoveUpdate(int prevX, int prevY, int newX, int newY) {
         Square prevSquare = squares[prevX][prevY];
         Square newSquare = squares[newX][newY];
-        Piece squareOrig = TrackOfPieces.get(prevSquare);
-        Piece squareNEW = TrackOfPieces.get(newSquare);
-        if (squareNEW != null){
-            if (squareOrig.getColor() != squareNEW.getColor()) {
-                //Can't have same color eat same
+        Piece movingPiece = TrackOfPieces.get(prevSquare);
+        if (movingPiece != null) {
+            //Remove the moving piece from its current square
+            TrackOfPieces.remove(prevSquare);
+            //Check if there is a piece at the new square
+            Piece capturedPiece = TrackOfPieces.get(newSquare);
+            if (capturedPiece != null && capturedPiece.getColor() != movingPiece.getColor()) {
+                //Capture logic: Remove the captured piece if it's an opponent's piece
                 TrackOfPieces.remove(newSquare);
-                TrackOfPieces.remove(prevSquare);
-                squareOrig.changePOSITION(newSquare.getPosX(), newSquare.getPosY());
-                TrackOfPieces.put(squareOrig.getCurrentSquare(), squareOrig);
             }
+            //Move the piece to the new square and update its internal position
+            movingPiece.changePOSITION(newX, newY);
+            TrackOfPieces.put(newSquare, movingPiece);
         }
     }
-
     public HashMap<Square, List<Square>> returnAllPossibleMoves(int colorToMove) {
         HashMap<Square, List<Square>> possibleMoves = new HashMap<>();
-
         for (Map.Entry<Square, Piece> entry : TrackOfPieces.entrySet()) {
             Piece piece = entry.getValue();
             Square currentSquare = entry.getKey();
-
             if (piece.getColor() == colorToMove) {
                 List<Square> movesForThisPiece = calculateMovesForPiece(piece, currentSquare);
                 possibleMoves.put(currentSquare, movesForThisPiece);
             }
         }
-
+        System.out.println(possibleMoves);
         return possibleMoves;
     }
-
     private List<Square> calculateMovesForPiece(Piece piece, Square currentSquare) {
         List<Square> moves = new ArrayList<>();
-
         switch (piece.getType()) {
-            case 1: // Pawn
+            case 1: //Pawn
                 moves.addAll(calculatePawnMoves(piece, currentSquare));
                 break;
-            case 2: // Knight
+            case 2: //Knight
                 moves.addAll(calculateKnightMoves(piece, currentSquare));
                 break;
-            case 3: // Bishop
+            case 3: //Bishop
                 moves.addAll(calculateBishopMoves(piece, currentSquare));
                 break;
-            case 4: // Rook
+            case 4: //Rook
                 moves.addAll(calculateRookMoves(piece, currentSquare));
                 break;
-            case 5: // Queen
+            case 5: //Queen
                 moves.addAll(calculateQueenMoves(piece, currentSquare));
                 break;
-            case 6: // King
+            case 6: //King
                 moves.addAll(calculateKingMoves(piece, currentSquare));
                 break;
         }
@@ -115,37 +116,40 @@ public class ChessBoard {
     }
     private List<Square> Thiccy(Piece piece, Square currentSquare, int[][] directions) {
         List<Square> moves = new ArrayList<>();
-
         for (int[] direction : directions) {
-            Square potentialMove = new Square(currentSquare.getPosX() + direction[0], currentSquare.getPosY() + direction[1]);
-
+            int nextX = currentSquare.getPosX() + direction[0];
+            int nextY = currentSquare.getPosY() + direction[1];
+            Square potentialMove = new Square(nextX, nextY);
             while (isSquareWithinBoard(potentialMove)) {
                 if (isSquareEmpty(potentialMove)) {
                     moves.add(potentialMove);
                 } else {
                     if (isSquareOccupiedByOpponent(potentialMove, piece.getColor())) {
-                        moves.add(potentialMove);
+                        moves.add(potentialMove); //Add capturing move
                     }
-                    break; // Stop if any piece is encountered
+                    break; //Stop if any piece is encountered
                 }
-                potentialMove = new Square(potentialMove.getPosX() + direction[0], potentialMove.getPosY() + direction[1]);
+
+                //Update the potentialMove for the next iteration
+                nextX += direction[0];
+                nextY += direction[1];
+                potentialMove = new Square(nextX, nextY);
             }
         }
 
         return moves;
     }
-    // Implement specific movement logic for each piece type
+
+    //Implement specific movement logic for each piece type
     private List<Square> calculatePawnMoves(Piece piece, Square currentSquare) {
         List<Square> moves = new ArrayList<>();
-        int direction = piece.getColor() == 0 ? -1 : 1; // Assuming 0 is White, 1 is Black
-        int startRow = piece.getColor() == 0 ? 6 : 1; // Starting row for White and Black
-
-        // Forward move
+        int direction = piece.getColor() == 0 ? -1 : 1; //Assuming 0 is White, 1 is Black
+        int startRow = piece.getColor() == 0 ? 6 : 1; //Starting row for White and Black
+        //Forward move
         Square oneStepForward = new Square(currentSquare.getPosX(), currentSquare.getPosY() + direction);
         if (isSquareEmpty(oneStepForward)) {
             moves.add(oneStepForward);
-
-            // Two-step move from start position
+            //Two-step move from start position
             if (currentSquare.getPosY() == startRow) {
                 Square twoStepsForward = new Square(currentSquare.getPosX(), currentSquare.getPosY() + 2 * direction);
                 if (isSquareEmpty(twoStepsForward)) {
@@ -154,15 +158,17 @@ public class ChessBoard {
             }
         }
 
-        // Capture moves
+        //Capture moves
         Square[] diagonalSquares = {
                 new Square(currentSquare.getPosX() - 1, currentSquare.getPosY() + direction),
                 new Square(currentSquare.getPosX() + 1, currentSquare.getPosY() + direction)
         };
 
         for (Square diagonalSquare : diagonalSquares) {
-            if (isSquareWithinBoard(diagonalSquare) && isSquareOccupiedByOpponent(diagonalSquare, piece.getColor())) {
-                moves.add(diagonalSquare);
+            if (!isSquareEmpty(diagonalSquare)){
+                if (isSquareWithinBoard(diagonalSquare) && isSquareOccupiedByOpponent(diagonalSquare, piece.getColor())) {
+                    moves.add(diagonalSquare);
+                }
             }
         }
 
@@ -191,7 +197,7 @@ public class ChessBoard {
     private List<Square> calculateKnightMoves(Piece piece, Square currentSquare) {
         List<Square> moves = new ArrayList<>();
 
-        // All possible L-shaped moves for a knight
+        //All possible L-shaped moves for a knight
         int[][] knightMoves = {
                 {-2, -1}, {-2, 1},
                 {-1, -2}, {-1, 2},
@@ -201,7 +207,7 @@ public class ChessBoard {
 
         for (int[] move : knightMoves) {
             Square potentialMove = new Square(currentSquare.getPosX() + move[0], currentSquare.getPosY() + move[1]);
-            if (isSquareWithinBoard(potentialMove) && isSquareOccupiedByOpponent(potentialMove, piece.getColor())) {
+            if (isSquareWithinBoard(potentialMove) && !isSquareOccupiedByAlly(potentialMove, piece.getColor())) {
                 moves.add(potentialMove);
             }
         }
@@ -237,7 +243,7 @@ public class ChessBoard {
 
         for (int[] move : kingMoves) {
             Square potentialMove = new Square(currentSquare.getPosX() + move[0], currentSquare.getPosY() + move[1]);
-            if (isSquareWithinBoard(potentialMove) && isSquareOccupiedByOpponent(potentialMove, piece.getColor())) {
+            if (isSquareWithinBoard(potentialMove) && !isSquareOccupiedByAlly(potentialMove, piece.getColor())) {
                 moves.add(potentialMove);
             }
         }
@@ -246,8 +252,9 @@ public class ChessBoard {
     }
 
     public Piece getPieceAt(int x, int y) {
-        return TrackOfPieces.get(new Square(x,y));
+        return TrackOfPieces.get(squares[x][y]);
     }
+
 
     public String toString() {
         StringBuilder boardString = new StringBuilder();
@@ -281,9 +288,13 @@ public class ChessBoard {
     }
 
     public List<Square> getPotentialMovesForPiece(int x, int y) {
-        HashMap<Square, List<Square>> possibleMoves = returnAllPossibleMoves(0);
+        HashMap<Square, List<Square>> possibleMoves = returnAllPossibleMoves(currentTurn);
         return possibleMoves.get(squares[x][y]);
 
 
+    }
+
+    public int getCurrentTurn() {
+        return currentTurn;
     }
 }

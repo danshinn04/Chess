@@ -21,14 +21,14 @@ public class ChessGUI {
         chessBoard = new JPanel(new GridLayout(8, 8));
         chessBoardSquares = new JButton[8][8];
 
-        // Initialize the chess board squares and set pieces
+        //Initialize the chess board squares and set pieces
         for (int y = 0; y < chessBoardSquares.length; y++) {
             for (int x = 0; x < chessBoardSquares[y].length; x++) {
                 JButton button = new JButton();
                 button.setOpaque(true);
                 button.setBackground((x + y) % 2 == 0 ? Color.WHITE : Color.GRAY);
 
-                // Invert the y-axis for chessboard
+                //Invert the y-axis for chessboard
                 Piece piece = gameBoard.getPieceAt(x, y);
                 if (piece != null) {
                     button.setText(getPieceSymbol(piece));
@@ -47,18 +47,6 @@ public class ChessGUI {
         frame.setVisible(true);
     }
 
-    private void showPossibleMoves(int x, int y) {
-        clearHighlights(); // Clear existing highlights
-
-        Piece selectedPiece = gameBoard.getPieceAt(x, y);
-        if (selectedPiece != null) {
-            // Assuming it's the correct turn for this piece's color
-            List<Square> possibleMoves = gameBoard.getPotentialMovesForPiece(x, y);
-            for (Square move : possibleMoves) {
-                highlightSquare(move.getPosX(), move.getPosY());
-            }
-        }
-    }
 
     private void clearHighlights() {
         for (int y = 0; y < chessBoardSquares.length; y++) {
@@ -72,25 +60,53 @@ public class ChessGUI {
 
     private void highlightSquare(int x, int y) {
         JButton squareButton = chessBoardSquares[y][x];
-        Color highlightColor = Color.YELLOW; // Choose a color that stands out
+        Color highlightColor = Color.YELLOW; //Choose a color that stands out
         squareButton.setBackground(highlightColor);
     }
 
-    // Method to get the symbol for a piece
+    //Method to get the symbol for a piece
     private String getPieceSymbol(Piece piece) {
         String color = piece.getColor() == 0 ? "W" : "B";
         String type = "";
         switch (piece.getType()) {
-            case 1: type = "P"; break; // Pawn
-            case 2: type = "N"; break; // Knight
-            case 3: type = "B"; break; // Bishop
-            case 4: type = "R"; break; // Rook
-            case 5: type = "Q"; break; // Queen
-            case 6: type = "K"; break; // King
+            case 1: type = "P"; break;
+            case 2: type = "N"; break;
+            case 3: type = "B"; break;
+            case 4: type = "R"; break;
+            case 5: type = "Q"; break;
+            case 6: type = "K"; break;
         }
         return color + type;
     }
 
+    private void showPossibleMoves(int x, int y) {
+        clearHighlights();
+        Piece selectedPiece = gameBoard.getPieceAt(x, y);
+        if (selectedPiece != null && selectedPiece.getColor() == gameBoard.getCurrentTurn()) {
+            List<Square> possibleMoves = gameBoard.getPotentialMovesForPiece(x, y);
+            for (Square move : possibleMoves) {
+                highlightSquare(move.getPosX(), move.getPosY());
+                JButton moveButton = chessBoardSquares[move.getPosY()][move.getPosX()];
+                moveButton.addActionListener(e -> {
+                    if (gameBoard.movePiece(new Square(x, y), move)) {
+                        updateGUI();
+                    }
+                });
+            }
+        }
+    }
+    private void updateGUI() {
+        //Update the board
+        for (int y = 0; y < chessBoardSquares.length; y++) {
+            for (int x = 0; x < chessBoardSquares[y].length; x++) {
+                JButton squareButton = chessBoardSquares[y][x];
+                Piece piece = gameBoard.getPieceAt(x, y);
+                squareButton.setText(piece != null ? getPieceSymbol(piece) : "");
+                squareButton.setBackground((x + y) % 2 == 0 ? Color.WHITE : Color.GRAY);
+            }
+        }
+        clearHighlights();
+    }
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {

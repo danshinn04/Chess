@@ -123,8 +123,7 @@ public class ChessGUI {
                 });
             }
         }
-        GameState gameState = gameBoard.checkGameState();
-        handleGameState(gameState);
+
     }
     public void updateGUI() {
         for (int y = 0; y < chessBoardSquares.length; y++) {
@@ -140,6 +139,8 @@ public class ChessGUI {
                 squareButton.setBackground((x + y) % 2 == 0 ? Color.WHITE : Color.GRAY);
             }
         }
+        GameState gameState = gameBoard.checkGameState();
+        handleGameState(gameState);
     }
     private void handleGameState(GameState gameState) {
         switch (gameState) {

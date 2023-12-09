@@ -179,7 +179,7 @@ public class ChessBoard {
         for (Map.Entry<Square, Piece> entry : TrackOfPieces.entrySet()) {
             Piece piece = entry.getValue();
             Square currentSquare = entry.getKey();
-            if (piece.getColor() == colorToMove) {
+            if (piece != null && piece.getColor() == colorToMove) {
                 List<Square> movesForThisPiece = calculateMovesForPiece(piece, currentSquare);
                 possibleMoves.put(currentSquare, movesForThisPiece);
             }
@@ -213,6 +213,35 @@ public class ChessBoard {
 
         return moves;
     }
+
+    private List<Square> calculateTheoreticalMovesForPiece(Piece piece, Square currentSquare) {
+        List<Square> moves = new ArrayList<>();
+        if(piece.getColor()!=currentTurn) {
+            switch (piece.getType()) {
+                case 1: //Pawn
+                    moves.addAll(calculatePawnMoves(piece, currentSquare));
+                    break;
+                case 2: //Knight
+                    moves.addAll(calculateKnightMoves(piece, currentSquare));
+                    break;
+                case 3: //Bishop
+                    moves.addAll(calculateBishopMoves(piece, currentSquare));
+                    break;
+                case 4: //Rook
+                    moves.addAll(calculateRookMoves(piece, currentSquare));
+                    break;
+                case 5: //Queen
+                    moves.addAll(calculateQueenMoves(piece, currentSquare));
+                    break;
+                case 6: //King
+                    moves.addAll(calculateKingMoves(piece, currentSquare));
+                    break;
+            }
+        }
+
+        return moves;
+    }
+
     private List<Square> Thiccy(Piece piece, Square currentSquare, int[][] directions) {
         List<Square> moves = new ArrayList<>();
         for (int[] direction : directions) {
@@ -476,9 +505,12 @@ public class ChessBoard {
     }
 
     public boolean isKingInCheck(int kingColor) {
-        Square kingSquare = findKing(kingColor);
-        System.out.println(kingColor);
-        return isSquareUnderAttack(kingSquare, kingColor);
+        Square kingSquare = findKing(currentTurn);
+        if (isSquareUnderAttack(kingSquare, currentTurn)){
+            System.out.println("Check");
+
+        }
+        return isSquareUnderAttack(kingSquare, currentTurn);
     }
 
     private Square findKing(int kingColor) {
@@ -495,7 +527,7 @@ public class ChessBoard {
         for (Map.Entry<Square, Piece> entry : TrackOfPieces.entrySet()) {
             Piece piece = entry.getValue();
             if (piece.getColor() != kingColor) {
-                List<Square> attackingMoves = calculateMovesForPiece(piece, entry.getKey());
+                List<Square> attackingMoves = calculateTheoreticalMovesForPiece(piece, entry.getKey());
                 if (attackingMoves.contains(square)) {
                     return true;
                 }
@@ -548,9 +580,13 @@ public class ChessBoard {
                 return false;
             }
         }
+        boolean yeet = false;
+        if (king.getColor() == currentTurn) {
+            yeet = !isKingInCheck(currentTurn);
+        }
 
         //Check if the king is in check or the castling squares are under attack
-        return !isKingInCheck(king.getColor()) && !areCastlingSquaresUnderAttack(kingX, row, endCol, king.getColor());
+        return yeet && !areCastlingSquaresUnderAttack(kingX, row, endCol, king.getColor());
     }
 
     private boolean areCastlingSquaresUnderAttack(int startCol, int row, int endCol, int playerColor) {

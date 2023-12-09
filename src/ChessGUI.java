@@ -139,24 +139,8 @@ public class ChessGUI {
                 squareButton.setBackground((x + y) % 2 == 0 ? Color.WHITE : Color.GRAY);
             }
         }
-        GameState gameState = gameBoard.checkGameState();
-        handleGameState(gameState);
     }
-    private void handleGameState(GameState gameState) {
-        switch (gameState) {
-            case CHECKMATE:
-                JOptionPane.showMessageDialog(frame, "Checkmate! Game Over.");
-                break;
-            case CHECK:
-                JOptionPane.showMessageDialog(frame, "Check!");
-                break;
-            case STALEMATE:
-                JOptionPane.showMessageDialog(frame, "Stalemate! Game Over.");
-                break;
-            case ONGOING:
-                break;
-        }
-    }
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {

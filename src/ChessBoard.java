@@ -44,8 +44,8 @@ public class ChessBoard {
         currentTurn = (currentTurn == 0) ? 1 : 0; //Move parity {0: White to Move, 1: Black to Move}
     }
     public boolean movePiece(Square fromSquare, Square toSquare) {
-        Piece piece = getPieceAt(fromSquare.getPosX(), fromSquare.getPosY());
 
+        Piece piece = getPieceAt(fromSquare.getPosX(), fromSquare.getPosY());
         if (piece != null && piece.getColor() == currentTurn) {
             List<Square> possibleMoves = getPotentialMovesForPiece(fromSquare.getPosX(), fromSquare.getPosY());
 
@@ -68,6 +68,7 @@ public class ChessBoard {
                     performCastling(fromSquare, toSquare);
                 }
                 resetJustMovedTwoSquares();
+
                 changeTurn();
                 if (piece instanceof Pawn && Math.abs(fromSquare.getPosY() - toSquare.getPosY()) == 2) {
                     ((Pawn) piece).setJustMovedTwoSquares(true);
@@ -173,6 +174,7 @@ public class ChessBoard {
             movingPiece.changePOSITION(newX, newY);
             TrackOfPieces.put(newSquare, movingPiece);
         }
+
     }
     public HashMap<Square, List<Square>> returnAllPossibleMoves(int colorToMove) {
         HashMap<Square, List<Square>> possibleMoves = new HashMap<>();
@@ -504,13 +506,50 @@ public class ChessBoard {
         return !hasLegalMoves(playerColor);
     }
 
-    public boolean isKingInCheck(int kingColor) {
-        Square kingSquare = findKing(currentTurn);
-        if (isSquareUnderAttack(kingSquare, currentTurn)){
-            System.out.println("Check");
+    private boolean checkAnnounced = false;
 
+    public boolean isKingInCheck(int kingColor) {
+        Square kingSquare = findKing(kingColor);
+        boolean isUnderAttack = isSquareUnderAttack(kingSquare, kingColor);
+
+        if (isUnderAttack && !checkAnnounced) {
+            System.out.println("Check");
+            JOptionPane.showMessageDialog(null, "Check!");
+            checkAnnounced = true; // Set flag to true after announcing
+        } else if (!isUnderAttack) {
+            checkAnnounced = false; // Reset flag if king is no longer in check
         }
-        return isSquareUnderAttack(kingSquare, currentTurn);
+
+        return isUnderAttack;
+    }
+
+    /*String[] options = new String[]{"Queen", "Rook", "Bishop", "Knight"};
+        int choice = JOptionPane.showOptionDialog(null,
+                "Choose piece for promotion",
+                "Pawn Promotion",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                options,
+                options[0]);
+
+        promotePawn(piece, square, options[choice]);*/
+
+
+    private void handleGameState(GameState gameState) {
+        switch (gameState) {
+            case CHECKMATE:
+                JOptionPane.showMessageDialog(null, "Checkmate! Game Over.");
+                break;
+            case CHECK:
+                JOptionPane.showMessageDialog(null, "Check!");
+                break;
+            case STALEMATE:
+                JOptionPane.showMessageDialog(null, "Stalemate! Game Over.");
+                break;
+            case ONGOING:
+                break;
+        }
     }
 
     private Square findKing(int kingColor) {

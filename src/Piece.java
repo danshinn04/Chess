@@ -1,41 +1,72 @@
-import java.awt.image.BufferedImage;
-import java.lang.*;
-import javax.imageio.ImageIO;
-import java.io.IOException;
-import java.util.*;
-public class Piece {
-    private final int color;
-    private Square currentSquare;
-    private int type;
-
-    //0: Nothing
-    //1: Pawn
-    //2: Knight
-    //3: Bishop
-    //4: Rook
-    //5: Queen
-    //6: King
-    public Piece(int color, int posX, int posY, int type) {
+public abstract class Piece {
+    protected int color; // 0 for white, 1 for black
+    protected int x;
+    protected int y;
+    protected int type; // Type of the piece, e.g., pawn, knight, etc.
+    protected boolean hasMoved;
+    public Piece(int color, int x, int y, int type) {
         this.color = color;
-        this.currentSquare = new Square(posX, posY);
+        this.x = x;
+        this.y = y;
         this.type = type;
+        this.hasMoved = false;
     }
 
+    // Getters
     public int getColor() {
         return color;
     }
 
-
-
-    public void changePOSITION(int posX, int posY) {
-        currentSquare.updatePos(posX, posY);
+    public int getX() {
+        return x;
     }
 
-    public Square getCurrentSquare() {
-        return currentSquare;
+    public int getY() {
+        return y;
     }
 
     public int getType() {
         return type;
+    }
+
+    // Setters
+    public void changePOSITION(int x, int y) {
+        this.x = x;
+        this.y = y;
+        this.hasMoved = true;
+    }
+    public boolean returnhasMoved() {
+        return hasMoved;
+    }
+
+    // Check if the move is legal for this piece (to be overridden in subclasses)
+    public boolean isLegalMove(int newX, int newY) {
+        // Basic implementation, specific rules to be implemented in subclasses
+        return newX >= 0 && newX < 8 && newY >= 0 && newY < 8; // Within the bounds of the board
+    }
+
+    // String representation of the piece
+    @Override
+    public String toString() {
+        return "Piece{" +
+                "color=" + (color == 0 ? "White" : "Black") +
+                ", x=" + x +
+                ", y=" + y +
+                ", type=" + type +
+                '}';
+    }
+
+    public char getSymbol() {
+        char s = 'a';
+        switch (type) {
+            case 1: s = 'P';
+                break; // Pawn
+            case 2: s = 'N'; break; // Knight
+            case 3: s = 'B'; break; // Bishop
+            case 4: s = 'R'; break; // Rook
+            case 5: s = 'Q'; break; // Queen
+            case 6: s = 'K'; break;
+        }
+        return s;
     }
 }

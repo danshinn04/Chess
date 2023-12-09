@@ -1,4 +1,5 @@
 import java.util.*;
+import javax.swing.JOptionPane;
 public class ChessBoard {
     private HashMap<Square, Piece> TrackOfPieces;
     private Square[][] squares;
@@ -14,29 +15,29 @@ public class ChessBoard {
         }
 
         // Black pieces
-        TrackOfPieces.put(squares[0][0],new Piece(1, 0, 0, 4)); //Black Rook at a8
-        TrackOfPieces.put(squares[1][0],new Piece(1, 1, 0, 2)); //Black Knight at b8
-        TrackOfPieces.put(squares[2][0],new Piece(1, 2, 0, 3)); //Black Bishop at c8
-        TrackOfPieces.put(squares[3][0],new Piece(1, 3, 0, 5)); //Black Queen at d8
-        TrackOfPieces.put(squares[4][0],new Piece(1, 4, 0, 6)); //Black King at e8
-        TrackOfPieces.put(squares[5][0],new Piece(1, 5, 0, 3)); //Black Bishop at f8
-        TrackOfPieces.put(squares[6][0],new Piece(1, 6, 0, 2)); //Black Knight at g8
-        TrackOfPieces.put(squares[7][0],new Piece(1, 7, 0, 4)); //Black Rook at h8
+        TrackOfPieces.put(squares[0][0],new Rook(1, 0, 0)); //Black Rook at a8
+        TrackOfPieces.put(squares[1][0],new Knight(1, 1, 0)); //Black Knight at b8
+        TrackOfPieces.put(squares[2][0],new Bishop(1, 2, 0)); //Black Bishop at c8
+        TrackOfPieces.put(squares[3][0],new Queen(1, 3, 0)); //Black Queen at d8
+        TrackOfPieces.put(squares[4][0],new King(1, 4, 0)); //Black King at e8
+        TrackOfPieces.put(squares[5][0],new Bishop(1, 5, 0)); //Black Bishop at f8
+        TrackOfPieces.put(squares[6][0],new Knight(1, 6, 0)); //Black Knight at g8
+        TrackOfPieces.put(squares[7][0],new Rook(1, 7, 0)); //Black Rook at h8
         for (int i = 0; i < 8; i++) {
-            TrackOfPieces.put(squares[i][1], new Piece(1, i, 1, 1)); //Black Pawns
+            TrackOfPieces.put(squares[i][1], new Pawn(1, i, 1)); //Black Pawns
         }
 
         //White pieces
-        TrackOfPieces.put(squares[0][7],new Piece(0, 0, 7, 4)); //White Rook at a1
-        TrackOfPieces.put(squares[1][7],new Piece(0, 1, 7, 2)); //White Knight at b1
-        TrackOfPieces.put(squares[2][7],new Piece(0, 2, 7, 3)); //White Bishop at c1
-        TrackOfPieces.put(squares[3][7],new Piece(0, 3, 7, 5)); //White Queen at d1
-        TrackOfPieces.put(squares[4][7],new Piece(0, 4, 7, 6)); //White King at e1
-        TrackOfPieces.put(squares[5][7],new Piece(0, 5, 7, 3)); //White Bishop at f1
-        TrackOfPieces.put(squares[6][7],new Piece(0, 6, 7, 2)); //White Knight at g1
-        TrackOfPieces.put(squares[7][7],new Piece(0, 7, 7, 4)); //White Rook at h1
+        TrackOfPieces.put(squares[0][7],new Rook(0, 0, 7)); //White Rook at a1
+        TrackOfPieces.put(squares[1][7],new Knight(0, 1, 7)); //White Knight at b1
+        TrackOfPieces.put(squares[2][7],new Bishop(0, 2, 7)); //White Bishop at c1
+        TrackOfPieces.put(squares[3][7],new Queen(0, 3, 7)); //White Queen at d1
+        TrackOfPieces.put(squares[4][7],new King(0, 4, 7)); //White King at e1
+        TrackOfPieces.put(squares[5][7],new Bishop(0, 5, 7)); //White Bishop at f1
+        TrackOfPieces.put(squares[6][7],new Knight(0, 6, 7)); //White Knight at g1
+        TrackOfPieces.put(squares[7][7],new Rook(0, 7, 7)); //White Rook at h1
         for (int i = 0; i < 8; i++) {
-            TrackOfPieces.put(squares[i][6], new Piece(0, i, 6, 1));  //White Pawns
+            TrackOfPieces.put(squares[i][6], new Pawn(0, i, 6));  //White Pawns
         }
     }
     public void changeTurn() {
@@ -44,16 +45,113 @@ public class ChessBoard {
     }
     public boolean movePiece(Square fromSquare, Square toSquare) {
         Piece piece = getPieceAt(fromSquare.getPosX(), fromSquare.getPosY());
+
         if (piece != null && piece.getColor() == currentTurn) {
             List<Square> possibleMoves = getPotentialMovesForPiece(fromSquare.getPosX(), fromSquare.getPosY());
+
             //Check if the move is in the list of possible moves
             if (possibleMoves.contains(toSquare)) {
+                if (piece instanceof Pawn && isEnPassantMove(piece, fromSquare, toSquare)) {
+                    handleEnPassantCapture(piece, toSquare);
+                }
+                if (piece instanceof Pawn) {
+                    if ((piece.getColor() == 0 && toSquare.getPosY() == 0) || // White pawn reaches the last row
+                            (piece.getColor() == 1 && toSquare.getPosY() == 7)) { // Black pawn reaches the last row
+                        handlePawnPromotion(piece, toSquare);
+                    }
+                }
+
                 MoveUpdate(fromSquare.getPosX(), fromSquare.getPosY(), toSquare.getPosX(), toSquare.getPosY());
+
+                //Check for castling move (king moving two squares)
+                if (piece instanceof King && Math.abs(fromSquare.getPosX() - toSquare.getPosX()) == 2) {
+                    performCastling(fromSquare, toSquare);
+                }
+                resetJustMovedTwoSquares();
                 changeTurn();
-                return true; //Return true if move is successful
+                if (piece instanceof Pawn && Math.abs(fromSquare.getPosY() - toSquare.getPosY()) == 2) {
+                    ((Pawn) piece).setJustMovedTwoSquares(true);
+                }
+                return true;
             }
         }
-        return false; //Return false if move is not successful or not allowed
+        return false;
+    }
+
+    private void handlePawnPromotion(Piece piece, Square square) {
+        String[] options = new String[]{"Queen", "Rook", "Bishop", "Knight"};
+        int choice = JOptionPane.showOptionDialog(null,
+                "Choose piece for promotion",
+                "Pawn Promotion",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                options,
+                options[0]);
+
+        promotePawn(piece, square, options[choice]);
+    }
+    public void placePieceAt(Piece piece, int x, int y) {
+        Square square = squares[x][y];
+        TrackOfPieces.put(square, piece); // Replace or add the piece at the given square
+
+        piece.changePOSITION(x, y);
+    }
+    private void promotePawn(Piece piece, Square square, String chosenPiece) {
+        int color = piece.getColor();
+        Piece newPiece;
+
+        switch (chosenPiece) {
+            case "Queen":
+                newPiece = new Queen(color, square.getPosX(), square.getPosY());
+                System.out.println("YE");
+                break;
+            case "Rook":
+                newPiece = new Rook(color, square.getPosX(), square.getPosY());
+                break;
+            case "Bishop":
+                newPiece = new Bishop(color, square.getPosX(), square.getPosY());
+                break;
+            case "Knight":
+                newPiece = new Knight(color, square.getPosX(), square.getPosY());
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid piece type for promotion");
+        }
+        placePieceAt(newPiece, piece.getX(), piece.getY());
+    }
+
+
+    private boolean isEnPassantMove(Piece pawn, Square fromSquare, Square toSquare) {
+        int dy = Math.abs(toSquare.getPosY() - fromSquare.getPosY());
+        int dx = Math.abs(toSquare.getPosX() - fromSquare.getPosX());
+        return dx == 1 && dy == 1 && isSquareEmpty(toSquare);
+    }
+
+    private void handleEnPassantCapture(Piece pawn, Square toSquare) {
+        int capturedPawnY = pawn.getColor() == 0 ? toSquare.getPosY() + 1 : toSquare.getPosY() - 1;
+        Square capturedPawnSquare = new Square(toSquare.getPosX(), capturedPawnY);
+        TrackOfPieces.remove(capturedPawnSquare); // Remove the captured pawn
+    }
+
+    private void resetJustMovedTwoSquares() {
+        for (Piece piece : TrackOfPieces.values()) {
+            if (piece instanceof Pawn) {
+                ((Pawn) piece).setJustMovedTwoSquares(false);
+            }
+        }
+    }
+
+    private void performCastling(Square kingFrom, Square kingTo) {
+        int row = kingFrom.getPosY();
+        int rookFromX = kingTo.getPosX() == 6 ? 7 : 0; // 7 for king-side, 0 for queen-side
+        int rookToX = kingTo.getPosX() == 6 ? 5 : 3; // Next to the king's final position
+
+        Square rookFrom = new Square(rookFromX, row);
+        Square rookTo = new Square(rookToX, row);
+        Piece rook = getPieceAt(rookFromX, row);
+
+        MoveUpdate(rookFrom.getPosX(), rookFrom.getPosY(), rookTo.getPosX(), rookTo.getPosY());
     }
     public Square getSquares(int x, int y) {
         return squares[x][y];
@@ -86,30 +184,31 @@ public class ChessBoard {
                 possibleMoves.put(currentSquare, movesForThisPiece);
             }
         }
-        System.out.println(possibleMoves);
         return possibleMoves;
     }
     private List<Square> calculateMovesForPiece(Piece piece, Square currentSquare) {
         List<Square> moves = new ArrayList<>();
-        switch (piece.getType()) {
-            case 1: //Pawn
-                moves.addAll(calculatePawnMoves(piece, currentSquare));
-                break;
-            case 2: //Knight
-                moves.addAll(calculateKnightMoves(piece, currentSquare));
-                break;
-            case 3: //Bishop
-                moves.addAll(calculateBishopMoves(piece, currentSquare));
-                break;
-            case 4: //Rook
-                moves.addAll(calculateRookMoves(piece, currentSquare));
-                break;
-            case 5: //Queen
-                moves.addAll(calculateQueenMoves(piece, currentSquare));
-                break;
-            case 6: //King
-                moves.addAll(calculateKingMoves(piece, currentSquare));
-                break;
+        if(piece.getColor()==currentTurn) {
+            switch (piece.getType()) {
+                case 1: //Pawn
+                    moves.addAll(calculatePawnMoves(piece, currentSquare));
+                    break;
+                case 2: //Knight
+                    moves.addAll(calculateKnightMoves(piece, currentSquare));
+                    break;
+                case 3: //Bishop
+                    moves.addAll(calculateBishopMoves(piece, currentSquare));
+                    break;
+                case 4: //Rook
+                    moves.addAll(calculateRookMoves(piece, currentSquare));
+                    break;
+                case 5: //Queen
+                    moves.addAll(calculateQueenMoves(piece, currentSquare));
+                    break;
+                case 6: //King
+                    moves.addAll(calculateKingMoves(piece, currentSquare));
+                    break;
+            }
         }
 
         return moves;
@@ -140,7 +239,18 @@ public class ChessBoard {
         return moves;
     }
 
-    //Implement specific movement logic for each piece type
+    private void addEnPassantMoves(Piece piece, List<Square> moves, Square currentSquare, int xOffset) {
+        int x = currentSquare.getPosX() + xOffset;
+        if (x >= 0 && x < 8) {
+            Piece adjacentPiece = getPieceAt(x, currentSquare.getPosY());
+            if (adjacentPiece instanceof Pawn && ((Pawn)adjacentPiece).isJustMovedTwoSquares()) {
+                System.out.println("Yes");
+                int yTarget = piece.getColor() == 0 ? currentSquare.getPosY() - 1 : currentSquare.getPosY() + 1;
+                moves.add(new Square(x, yTarget));
+            }
+        }
+    }
+
     private List<Square> calculatePawnMoves(Piece piece, Square currentSquare) {
         List<Square> moves = new ArrayList<>();
         int direction = piece.getColor() == 0 ? -1 : 1; //Assuming 0 is White, 1 is Black
@@ -171,7 +281,17 @@ public class ChessBoard {
                 }
             }
         }
+        // En-passant logic for white pawns
+        if (piece.getColor() == 0 && currentSquare.getPosY() == 3) {
+            addEnPassantMoves(piece, moves, currentSquare, -1); // Check left
+            addEnPassantMoves(piece, moves, currentSquare, 1);  // Check right
+        }
 
+        // En-passant logic for black pawns
+        if (piece.getColor() == 1 && currentSquare.getPosY() == 4) {
+            addEnPassantMoves(piece, moves, currentSquare, -1); // Check left
+            addEnPassantMoves(piece, moves, currentSquare, 1);  // Check right
+        }
         return moves;
     }
 
@@ -248,6 +368,17 @@ public class ChessBoard {
             }
         }
 
+        if (!piece.returnhasMoved()) {
+            // Check king-side and queen-side castling
+            if (isCastlingPossible(currentSquare.getPosX(), currentSquare.getPosY(), 7, currentSquare.getPosY())) {
+                moves.add(new Square(6, currentSquare.getPosY())); // King-side castling
+
+            }
+            if (isCastlingPossible(currentSquare.getPosX(), currentSquare.getPosY(), 0, currentSquare.getPosY())) {
+                moves.add(new Square(2, currentSquare.getPosY())); // Queen-side castling
+            }
+        }
+
         return moves;
     }
 
@@ -289,12 +420,166 @@ public class ChessBoard {
 
     public List<Square> getPotentialMovesForPiece(int x, int y) {
         HashMap<Square, List<Square>> possibleMoves = returnAllPossibleMoves(currentTurn);
-        return possibleMoves.get(squares[x][y]);
+        List<Square> moves = possibleMoves.get(squares[x][y]);
 
+        return filterMovesThatLeaveKingInCheck(moves, squares[x][y]);
 
     }
+
+    private List<Square> filterMovesThatLeaveKingInCheck(List<Square> moves, Square currentSquare) {
+        Piece piece = getPieceAt(currentSquare.getPosX(), currentSquare.getPosY());
+        List<Square> safeMoves = new ArrayList<>();
+
+        for (Square move : moves) {
+            // Temporarily make the move
+            makeTemporaryMove(currentSquare, move, piece);
+
+            // Check if the king is still in check after this move
+            if (!isKingInCheck(piece.getColor())) {
+                safeMoves.add(move);
+            }
+
+            // Undo the temporary move
+            undoTemporaryMove(currentSquare, move, piece);
+        }
+
+        return safeMoves;
+    }
+    private Piece tempCapturedPiece;
+
+    private void makeTemporaryMove(Square from, Square to, Piece piece) {
+        tempCapturedPiece = TrackOfPieces.get(to);
+        TrackOfPieces.remove(from);
+        TrackOfPieces.put(to, piece);
+    }
+
+    private void undoTemporaryMove(Square from, Square to, Piece piece) {
+        TrackOfPieces.remove(to);
+        TrackOfPieces.put(from, piece);
+        if (tempCapturedPiece != null) {
+            TrackOfPieces.put(to, tempCapturedPiece);
+            tempCapturedPiece = null;
+        }
+    }
+
 
     public int getCurrentTurn() {
         return currentTurn;
     }
+
+    public boolean isCheckmate(int playerColor) {
+        if (!isKingInCheck(playerColor)) {
+            return false;
+        }
+
+        return !hasLegalMoves(playerColor);
+    }
+
+    public boolean isKingInCheck(int kingColor) {
+        Square kingSquare = findKing(kingColor);
+        System.out.println(kingColor);
+        return isSquareUnderAttack(kingSquare, kingColor);
+    }
+
+    private Square findKing(int kingColor) {
+        for (Map.Entry<Square, Piece> entry : TrackOfPieces.entrySet()) {
+            Piece piece = entry.getValue();
+            if (piece.getColor() == kingColor && piece instanceof King) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
+    private boolean isSquareUnderAttack(Square square, int kingColor) {
+        for (Map.Entry<Square, Piece> entry : TrackOfPieces.entrySet()) {
+            Piece piece = entry.getValue();
+            if (piece.getColor() != kingColor) {
+                List<Square> attackingMoves = calculateMovesForPiece(piece, entry.getKey());
+                if (attackingMoves.contains(square)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public GameState checkGameState() {
+        boolean kingInCheck = isKingInCheck(currentTurn);
+        boolean hasLegalMoves = hasLegalMoves(currentTurn);
+
+        if (kingInCheck) {
+            return hasLegalMoves ? GameState.CHECK : GameState.CHECKMATE;
+        } else {
+            return hasLegalMoves ? GameState.ONGOING : GameState.STALEMATE;
+        }
+    }
+
+    private boolean hasLegalMoves(int playerColor) {
+        for (Map.Entry<Square, Piece> entry : TrackOfPieces.entrySet()) {
+            Piece piece = entry.getValue();
+            if (piece.getColor() == playerColor) {
+                List<Square> legalMoves = getPotentialMovesForPiece(entry.getKey().getPosX(), entry.getKey().getPosY());
+                if (!legalMoves.isEmpty()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean isCastlingPossible(int kingX, int kingY, int rookX, int rookY) {
+        Piece king = getPieceAt(kingX, kingY);
+        Piece rook = getPieceAt(rookX, rookY);
+
+        //Check if pieces are King and Rook and have not moved
+        if (!(rook instanceof Rook) || king.returnhasMoved() || rook.returnhasMoved()) {
+            return false;
+        }
+
+        //Determine the row and range for castling
+        int row = kingY;
+        int startCol = Math.min(kingX, rookX) + 1;
+        int endCol = Math.max(kingX, rookX) - 1;
+
+        //Check if squares between king and rook are empty
+        for (int col = startCol; col <= endCol; col++) {
+            if (!isSquareEmpty(new Square(col, row))) {
+                return false;
+            }
+        }
+
+        //Check if the king is in check or the castling squares are under attack
+        return !isKingInCheck(king.getColor()) && !areCastlingSquaresUnderAttack(kingX, row, endCol, king.getColor());
+    }
+
+    private boolean areCastlingSquaresUnderAttack(int startCol, int row, int endCol, int playerColor) {
+        int opponentColor = 1 - playerColor;
+        for (int col = startCol; col <= endCol; col++) {
+            Square squareToCheck = new Square(col, row);
+            if (isSquareUnderAttackByOpponentPieces(squareToCheck, opponentColor)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isSquareUnderAttackByOpponentPieces(Square square, int opponentColor) {
+        for (Map.Entry<Square, Piece> entry : TrackOfPieces.entrySet()) {
+            Piece piece = entry.getValue();
+            if (piece.getColor() == opponentColor) {
+                List<Square> attackingMoves = calculateMovesForPiece(piece, entry.getKey());
+                if (attackingMoves.contains(square)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+
+}
+
+enum GameState {
+    ONGOING, CHECK, CHECKMATE, STALEMATE
 }

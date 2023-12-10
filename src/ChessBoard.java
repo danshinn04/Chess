@@ -1,13 +1,15 @@
 import java.util.*;
-import javax.swing.JOptionPane;
+import javax.swing.*;
+
 public class ChessBoard {
     private HashMap<Square, Piece> TrackOfPieces;
     private Square[][] squares;
     private int currentTurn = 0;
+    private ArrayList<String> moveHistory;
     public ChessBoard() {
         TrackOfPieces = new HashMap<>();
         squares = new Square[8][8];
-
+        moveHistory = new ArrayList<>();
         for (int x = 0; x < 8; x++) {
             for (int y = 0; y < 8; y++) {
                 squares[x][y] = new Square(x, y);
@@ -157,6 +159,8 @@ public class ChessBoard {
     public Square getSquares(int x, int y) {
         return squares[x][y];
     }
+
+
     public void MoveUpdate(int prevX, int prevY, int newX, int newY) {
         Square prevSquare = squares[prevX][prevY];
         Square newSquare = squares[newX][newY];
@@ -173,9 +177,38 @@ public class ChessBoard {
             //Move the piece to the new square and update its internal position
             movingPiece.changePOSITION(newX, newY);
             TrackOfPieces.put(newSquare, movingPiece);
+            recordMove(movingPiece, newSquare);
         }
 
     }
+
+
+    public void recordMove(Piece piece, Square toSquare) {
+        String moveNotation = moveToString(piece, toSquare);
+        moveHistory.add(moveNotation);
+    }
+
+    public String moveToString(Piece piece, Square destination) {
+        String pieceNotation = "";
+        if (piece instanceof Knight) {
+            pieceNotation = "N";
+        } else if (piece instanceof Bishop) {
+            pieceNotation = "B";
+        } else if (piece instanceof Rook) {
+            pieceNotation = "R";
+        } else if (piece instanceof Queen) {
+            pieceNotation = "Q";
+        } else if (piece instanceof King) {
+            pieceNotation = "K";
+        }
+
+        char file = (char) ('a' + destination.getPosX());
+        int rank = 8 - destination.getPosY();
+
+        return pieceNotation + file + rank;
+    }
+
+
     public HashMap<Square, List<Square>> returnAllPossibleMoves(int colorToMove) {
         HashMap<Square, List<Square>> possibleMoves = new HashMap<>();
         for (Map.Entry<Square, Piece> entry : TrackOfPieces.entrySet()) {
@@ -523,6 +556,10 @@ public class ChessBoard {
         return isUnderAttack;
     }
 
+
+
+
+
     /*String[] options = new String[]{"Queen", "Rook", "Bishop", "Knight"};
         int choice = JOptionPane.showOptionDialog(null,
                 "Choose piece for promotion",
@@ -653,6 +690,12 @@ public class ChessBoard {
     }
 
 
+    public void update(JTextArea moveHistoryArea) {
+        for (String s :moveHistory){
+            moveHistoryArea.append(s + "\n");
+        }
+        moveHistory.clear();
+    }
 }
 
 enum GameState {

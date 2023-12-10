@@ -6,6 +6,7 @@ import java.util.*;
 public class ChessGUI {
     private JFrame frame;
     private JPanel chessBoard;
+    private JTextArea moveHistoryArea;
     private static JButton[][] chessBoardSquares;
     private static ChessBoard gameBoard;
     private Map<String, ImageIcon> pieceImages;
@@ -48,6 +49,12 @@ public class ChessGUI {
         chessBoard = new JPanel(new GridLayout(8, 8));
         chessBoardSquares = new JButton[8][8];
 
+
+        moveHistoryArea = new JTextArea(10, 20);
+        moveHistoryArea.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(moveHistoryArea);
+        frame.add(scrollPane, BorderLayout.EAST);
+
         // Initialize the chess board squares and set pieces
         for (int y = 0; y < chessBoardSquares.length; y++) {
             for (int x = 0; x < chessBoardSquares[y].length; x++) {
@@ -71,7 +78,7 @@ public class ChessGUI {
         }
 
         frame.add(chessBoard, BorderLayout.CENTER);
-        frame.setSize(1000, 1000);
+        frame.setSize(1200, 1000);
         frame.setVisible(true);
     }
 
@@ -89,24 +96,10 @@ public class ChessGUI {
 
     private void highlightSquare(int x, int y) {
         JButton squareButton = chessBoardSquares[y][x];
-        Color highlightColor = Color.YELLOW; //Choose a color that stands out
+        Color highlightColor = Color.GREEN; //Color
         squareButton.setBackground(highlightColor);
     }
 
-    //Method to get the symbol for a piece
-    private String getPieceSymbol(Piece piece) {
-        String color = piece.getColor() == 0 ? "W" : "B";
-        String type = "";
-        switch (piece.getType()) {
-            case 1: type = "P"; break;
-            case 2: type = "N"; break;
-            case 3: type = "B"; break;
-            case 4: type = "R"; break;
-            case 5: type = "Q"; break;
-            case 6: type = "K"; break;
-        }
-        return color + type;
-    }
 
     private void showPossibleMoves(int x, int y) {
         clearHighlights();
@@ -137,8 +130,10 @@ public class ChessGUI {
                     squareButton.setIcon(null);
                 }
                 squareButton.setBackground((x + y) % 2 == 0 ? Color.WHITE : Color.GRAY);
+
             }
         }
+        gameBoard.update(moveHistoryArea);
     }
 
     public static void main(String[] args) {

@@ -45,6 +45,8 @@ public class ChessBoard {
     public void changeTurn() {
         currentTurn = (currentTurn == 0) ? 1 : 0; //Move parity {0: White to Move, 1: Black to Move}
     }
+
+
     public boolean movePiece(Square fromSquare, Square toSquare) {
 
         Piece piece = getPieceAt(fromSquare.getPosX(), fromSquare.getPosY());
@@ -96,9 +98,10 @@ public class ChessBoard {
     }
     public void placePieceAt(Piece piece, int x, int y) {
         Square square = squares[x][y];
-        TrackOfPieces.put(square, piece); // Replace or add the piece at the given square
-
-        piece.changePOSITION(x, y);
+        if (piece != null) {
+            piece.changePOSITION(x, y); // Only change position if piece is not null
+        }
+        TrackOfPieces.put(square, piece); // This can handle null (removing a piece)
     }
     private void promotePawn(Piece piece, Square square, String chosenPiece) {
         int color = piece.getColor();
@@ -183,6 +186,8 @@ public class ChessBoard {
     }
 
 
+
+
     public void recordMove(Piece piece, Square toSquare) {
         String moveNotation = moveToString(piece, toSquare);
         moveHistory.add(moveNotation);
@@ -208,6 +213,10 @@ public class ChessBoard {
         return pieceNotation + file + rank;
     }
 
+    public Square getSquare(int x, int y){
+        return squares[x][y];
+    }
+
     public HashMap<Square, Piece> returnBoard(){
         return TrackOfPieces;
     }
@@ -218,11 +227,13 @@ public class ChessBoard {
             Square currentSquare = entry.getKey();
             if (piece != null && piece.getColor() == colorToMove) {
                 List<Square> movesForThisPiece = calculateMovesForPiece(piece, currentSquare);
+
                 possibleMoves.put(currentSquare, movesForThisPiece);
             }
         }
         return possibleMoves;
     }
+
     private List<Square> calculateMovesForPiece(Piece piece, Square currentSquare) {
         List<Square> moves = new ArrayList<>();
         if(piece.getColor()==currentTurn) {
@@ -323,7 +334,7 @@ public class ChessBoard {
         int startRow = piece.getColor() == 0 ? 6 : 1; //Starting row for White and Black
         //Forward move
         Square oneStepForward = new Square(currentSquare.getPosX(), currentSquare.getPosY() + direction);
-        if (isSquareEmpty(oneStepForward)) {
+        if (isSquareEmpty(oneStepForward) && isSquareWithinBoard(oneStepForward)) {
             moves.add(oneStepForward);
             //Two-step move from start position
             if (currentSquare.getPosY() == startRow) {
@@ -555,17 +566,13 @@ public class ChessBoard {
         if (isUnderAttack && !checkAnnounced) {
             System.out.println("Check");
             JOptionPane.showMessageDialog(null, "Check!");
-            checkAnnounced = true; // Set flag to true after announcing
+            checkAnnounced = true; //Set flag to true after announcing
         } else if (!isUnderAttack) {
-            checkAnnounced = false; // Reset flag if king is no longer in check
+            checkAnnounced = false; //Reset flag if king is no longer in check
         }
 
         return isUnderAttack;
     }
-
-
-
-
 
     /*String[] options = new String[]{"Queen", "Rook", "Bishop", "Knight"};
         int choice = JOptionPane.showOptionDialog(null,
@@ -579,27 +586,10 @@ public class ChessBoard {
 
         promotePawn(piece, square, options[choice]);*/
 
-
-    private void handleGameState(GameState gameState) {
-        switch (gameState) {
-            case CHECKMATE:
-                JOptionPane.showMessageDialog(null, "Checkmate! Game Over.");
-                break;
-            case CHECK:
-                JOptionPane.showMessageDialog(null, "Check!");
-                break;
-            case STALEMATE:
-                JOptionPane.showMessageDialog(null, "Stalemate! Game Over.");
-                break;
-            case ONGOING:
-                break;
-        }
-    }
-
     private Square findKing(int kingColor) {
         for (Map.Entry<Square, Piece> entry : TrackOfPieces.entrySet()) {
             Piece piece = entry.getValue();
-            if (piece.getColor() == kingColor && piece instanceof King) {
+            if (piece != null && piece.getColor() == kingColor && piece instanceof King) {
                 return entry.getKey();
             }
         }
@@ -609,7 +599,7 @@ public class ChessBoard {
     private boolean isSquareUnderAttack(Square square, int kingColor) {
         for (Map.Entry<Square, Piece> entry : TrackOfPieces.entrySet()) {
             Piece piece = entry.getValue();
-            if (piece.getColor() != kingColor) {
+            if (piece != null && piece.getColor() != kingColor) {
                 List<Square> attackingMoves = calculateTheoreticalMovesForPiece(piece, entry.getKey());
                 if (attackingMoves.contains(square)) {
                     return true;
@@ -618,6 +608,7 @@ public class ChessBoard {
         }
         return false;
     }
+
 
     public GameState checkGameState() {
         boolean kingInCheck = isKingInCheck(currentTurn);
@@ -686,7 +677,7 @@ public class ChessBoard {
     private boolean isSquareUnderAttackByOpponentPieces(Square square, int opponentColor) {
         for (Map.Entry<Square, Piece> entry : TrackOfPieces.entrySet()) {
             Piece piece = entry.getValue();
-            if (piece.getColor() == opponentColor) {
+            if (piece != null && piece.getColor() == opponentColor) {
                 List<Square> attackingMoves = calculateMovesForPiece(piece, entry.getKey());
                 if (attackingMoves.contains(square)) {
                     return true;
@@ -697,9 +688,10 @@ public class ChessBoard {
     }
 
 
-    public void update(JTextArea moveHistoryArea) {
+    public void update(JTextArea moveHistoryArea, ArrayList<String> movehistory) {
         for (String s :moveHistory){
             moveHistoryArea.append(s + "\n");
+            movehistory.add(s);
         }
         moveHistory.clear();
     }

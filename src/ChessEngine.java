@@ -4,14 +4,21 @@ public class ChessEngine {
     private ChessBoard gameboard;
     private int maxDepth;
     private int turn;
-    private HashMap<Square, Piece> bestMove;
+    private int[] bestMove;
     private Stack<Piece> capturedPiecesStack;
+    private double[] valOfPieces;
 
     public ChessEngine(ChessBoard gameboard, int maxDepth) {
         this.gameboard = gameboard;
         this.maxDepth = maxDepth;
         this.turn = gameboard.getCurrentTurn();
         this.capturedPiecesStack = new Stack<>();
+        valOfPieces = new double[]{0.0,1.0,3.0,3.5,5.0,9.0,4000.0};
+    }
+
+    public void updateChessBoard(ChessBoard a) {
+        gameboard = a;
+        capturedPiecesStack.empty();
     }
 
     public void updateBoard() {
@@ -20,7 +27,8 @@ public class ChessEngine {
 
     private double evaluateBoard() {
         double[] eval = calculateTotalPositionalValue();
-        return turn == 0 ? eval[0] - eval[1] : eval[1] - eval[0];
+        System.out.println(eval[0] + " " + eval[1]);
+        return turn == 0 ? eval[1] - eval[0] : eval[0] - eval[1];
     }
 
     private double[] calculateTotalPositionalValue() {
@@ -34,8 +42,10 @@ public class ChessEngine {
             if (piece != null) {
                 if (piece.getColor() == 0) {
                     whiteScore += piece.getPositionalValue(square.getPosX(), square.getPosY());
+                    whiteScore += valOfPieces[piece.getType()];
                 } else {
                     blackScore += piece.getPositionalValue(square.getPosX(), square.getPosY());
+                    blackScore += valOfPieces[piece.getType()];
                 }
             }
         }
@@ -44,29 +54,37 @@ public class ChessEngine {
 
     private void simulateMove(Square from, Square to) {
         Piece movingPiece = gameboard.getPieceAt(from.getPosX(), from.getPosY());
-        Piece capturedPiece = gameboard.getPieceAt(to.getPosX(), to.getPosY());
-        gameboard.placePieceAt(movingPiece, to.getPosX(), to.getPosY());
-        gameboard.placePieceAt(null, from.getPosX(), from.getPosY());
-        capturedPiecesStack.push(capturedPiece);
+        if (movingPiece != null) {
+            Piece capturedPiece = gameboard.getPieceAt(to.getPosX(), to.getPosY());
+            gameboard.placePieceAt(movingPiece, to.getPosX(), to.getPosY());
+            gameboard.placePieceAt(null, from.getPosX(), from.getPosY());
+            capturedPiecesStack.push(capturedPiece);
+        }
     }
+
 
     private void revertMove(Square from, Square to) {
         Piece movingPiece = gameboard.getPieceAt(to.getPosX(), to.getPosY());
         Piece capturedPiece = capturedPiecesStack.pop();
         gameboard.placePieceAt(movingPiece, from.getPosX(), from.getPosY());
-        gameboard.placePieceAt(capturedPiece, to.getPosX(), to.getPosY());
+        if (capturedPiece != null) {
+            gameboard.placePieceAt(capturedPiece, to.getPosX(), to.getPosY());
+        } else {
+            gameboard.placePieceAt(null, to.getPosX(), to.getPosY()); // Explicitly remove piece if it was null
+        }
     }
 
     private double minimax(int depth, double alpha, double beta, boolean maximizingPlayer) {
         if (depth == 0) {
             return evaluateBoard();
         }
-
-        if (maximizingPlayer) {
+        if (!maximizingPlayer) {
             double maxEval = Double.NEGATIVE_INFINITY;
             for (Map.Entry<Square, List<Square>> entry : gameboard.returnAllPossibleMoves(turn).entrySet()) {
                 Square fromSquare = entry.getKey();
                 for (Square toSquare : entry.getValue()) {
+                    //System.out.println(fromSquare.getPosX() + " " + fromSquare.getPosY() + " " + toSquare.getPosX() + " " + toSquare.getPosY());
+
                     simulateMove(fromSquare, toSquare);
                     double eval = minimax(depth - 1, alpha, beta, false);
                     revertMove(fromSquare, toSquare);
@@ -97,28 +115,34 @@ public class ChessEngine {
         }
     }
 
-    public HashMap<Square, Piece> calculateBestMove() {
+    public int[] calculateBestMove() {
+        updateBoard();
         double bestScore = turn == 0 ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
         Square bestFrom = null;
         Square bestTo = null;
 
         for (Map.Entry<Square, List<Square>> entry : gameboard.returnAllPossibleMoves(turn).entrySet()) {
+            Square fromSquare = entry.getKey();
             for (Square toSquare : entry.getValue()) {
-                simulateMove(entry.getKey(), toSquare);
-                double score = minimax(maxDepth - 1, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, turn != 0);
-                revertMove(entry.getKey(), toSquare);
+                simulateMove(fromSquare, toSquare);
+                double score = minimax(maxDepth - 1, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, turn == 0);
+                revertMove(fromSquare, toSquare);
 
-                if ((turn == 0 && score > bestScore) || (turn == 1 && score < bestScore)) {
+                if ((turn == 0 && score > bestScore) || (turn != 0 && score < bestScore)) {
                     bestScore = score;
-                    bestFrom = entry.getKey();
+                    bestFrom = fromSquare;
                     bestTo = toSquare;
                 }
             }
         }
+        gameboard.changeTurn();
 
         if (bestFrom != null && bestTo != null) {
-            bestMove = new HashMap<>();
-            bestMove.put(bestFrom, gameboard.getPieceAt(bestTo.getPosX(), bestTo.getPosY()));
+            bestMove = new int[]{bestFrom.getPosX(), bestFrom.getPosY(), bestTo.getPosX(),bestTo.getPosY()};
+            System.out.println("Best move calculated: " + bestFrom + " to " + bestTo); // Debug print
+        } else {
+            System.out.println("No valid move found"); // Debug print for no move scenario
+            bestMove = null;
         }
         return bestMove;
     }

@@ -1,21 +1,25 @@
 import javax.swing.*;
 import java.awt.*;
+import java.io.IOException;
 import java.util.List;
 import java.util.*;
+import java.io.FileWriter;
 
 public class ChessGUI {
     private JFrame frame;
     private JPanel chessBoard;
     private JTextArea moveHistoryArea;
     private static JButton[][] chessBoardSquares;
+    private ArrayList<String> movehistory;
     private static ChessBoard gameBoard;
     private Map<String, ImageIcon> pieceImages;
     private ChessEngine chessEngine;
     public ChessGUI() {
         gameBoard = new ChessBoard();
+        movehistory = new ArrayList<>();
         loadPieceImages();
         initializeGUI();
-        
+        chessEngine = new ChessEngine(gameBoard, 4);
     }
     private ImageIcon loadScaledImage(String imagePath, int width, int height) {
         ImageIcon icon = new ImageIcon(imagePath);
@@ -40,8 +44,18 @@ public class ChessGUI {
         pieceImages.put("wP", loadScaledImage("C:/Users/Dan/Downloads/Chess/wp.png", imageSize, imageSize));
     }
     private String getPieceKey(Piece piece) {
-        // Construct the key used in the pieceImages map
         return (piece.getColor() == 0 ? "w" : "b") + Character.toUpperCase(piece.getSymbol());
+    }
+
+    private void saveMoveHistoryToFile(String filename) {
+        try (FileWriter writer = new FileWriter(filename)) {
+            for (String move : movehistory) {
+                writer.write(move + System.lineSeparator());
+            }
+            System.out.println("Move history saved to " + filename);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -52,19 +66,22 @@ public class ChessGUI {
 
         chessBoard = new JPanel(new GridLayout(8, 8));
         chessBoardSquares = new JButton[8][8];
-
-
+        JButton saveMoveHistoryButton = new JButton("Save Move History");
+        saveMoveHistoryButton.addActionListener(e -> saveMoveHistoryToFile("chess_game_moves.txt"));
+        JPanel controlPanel = new JPanel();
+        controlPanel.add(saveMoveHistoryButton);
+        frame.add(controlPanel, BorderLayout.SOUTH);
         moveHistoryArea = new JTextArea(10, 20);
         moveHistoryArea.setEditable(false);
         JScrollPane scrollPane = new JScrollPane(moveHistoryArea);
         frame.add(scrollPane, BorderLayout.EAST);
 
-        // Initialize the chess board squares and set pieces
+        //Initialize the chess board squares and set pieces
         for (int y = 0; y < chessBoardSquares.length; y++) {
             for (int x = 0; x < chessBoardSquares[y].length; x++) {
                 JButton button = new JButton();
                 button.setOpaque(true);
-                button.setBorderPainted(false); // Optional: to remove button borders
+                button.setBorderPainted(false);
                 button.setBackground((x + y) % 2 == 0 ? Color.WHITE : Color.GRAY);
 
                 Piece piece = gameBoard.getPieceAt(x, y);
@@ -116,12 +133,28 @@ public class ChessGUI {
                 moveButton.addActionListener(e -> {
                     if (gameBoard.movePiece(new Square(x, y), move)) {
                         updateGUI();
+                        if (gameBoard.getCurrentTurn() == 1) { //Black's turn (engine)
+                            SwingUtilities.invokeLater(this::executeEngineMove);
+                        }
                     }
                 });
             }
         }
-
     }
+
+    private void executeEngineMove() {
+        chessEngine.updateChessBoard(gameBoard);
+        int[] bestMove = chessEngine.calculateBestMove();
+        Square squarefrom = gameBoard.getSquare(bestMove[0],bestMove[1]);
+        Square squareto = gameBoard.getSquare(bestMove[2],bestMove[3]);
+        System.out.println("Here");
+        System.out.println(squarefrom);
+        System.out.println(squareto);
+        gameBoard.MoveUpdate(squarefrom.getPosX(), squarefrom.getPosY(), squareto.getPosX(), squareto.getPosY());
+        System.out.println(gameBoard.getCurrentTurn());
+        updateGUI();
+    }
+
     public void updateGUI() {
         for (int y = 0; y < chessBoardSquares.length; y++) {
             for (int x = 0; x < chessBoardSquares[y].length; x++) {
@@ -137,7 +170,7 @@ public class ChessGUI {
 
             }
         }
-        gameBoard.update(moveHistoryArea);
+        gameBoard.update(moveHistoryArea, movehistory);
     }
 
     public static void main(String[] args) {

@@ -4,12 +4,14 @@ public abstract class Piece {
     protected int y;
     protected int type; // Type of the piece, e.g., pawn, knight, etc.
     protected boolean hasMoved;
-    public Piece(int color, int x, int y, int type) {
+    protected double[][] TableOfPositionalVal;
+    public Piece(int color, int x, int y, int type, double[][] TableOfPositionalVal) {
         this.color = color;
         this.x = x;
         this.y = y;
         this.type = type;
         this.hasMoved = false;
+        this.TableOfPositionalVal = TableOfPositionalVal;
     }
 
     // Getters
@@ -37,6 +39,10 @@ public abstract class Piece {
     }
     public boolean returnhasMoved() {
         return hasMoved;
+    }
+
+    public double getPositionalValue(int x, int y) {
+        return TableOfPositionalVal[x][y];
     }
 
     // Check if the move is legal for this piece (to be overridden in subclasses)

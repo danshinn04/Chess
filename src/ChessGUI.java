@@ -10,10 +10,12 @@ public class ChessGUI {
     private static JButton[][] chessBoardSquares;
     private static ChessBoard gameBoard;
     private Map<String, ImageIcon> pieceImages;
+    private ChessEngine chessEngine;
     public ChessGUI() {
         gameBoard = new ChessBoard();
         loadPieceImages();
         initializeGUI();
+        
     }
     private ImageIcon loadScaledImage(String imagePath, int width, int height) {
         ImageIcon icon = new ImageIcon(imagePath);
@@ -41,6 +43,8 @@ public class ChessGUI {
         // Construct the key used in the pieceImages map
         return (piece.getColor() == 0 ? "w" : "b") + Character.toUpperCase(piece.getSymbol());
     }
+
+
     private void initializeGUI() {
         frame = new JFrame("Chess Game");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

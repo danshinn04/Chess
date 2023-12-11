@@ -208,7 +208,9 @@ public class ChessBoard {
         return pieceNotation + file + rank;
     }
 
-
+    public HashMap<Square, Piece> returnBoard(){
+        return TrackOfPieces;
+    }
     public HashMap<Square, List<Square>> returnAllPossibleMoves(int colorToMove) {
         HashMap<Square, List<Square>> possibleMoves = new HashMap<>();
         for (Map.Entry<Square, Piece> entry : TrackOfPieces.entrySet()) {
@@ -450,6 +452,10 @@ public class ChessBoard {
         return TrackOfPieces.get(squares[x][y]);
     }
 
+    public HashMap<Square, Piece> getBoardState() {
+        return new HashMap<>(TrackOfPieces);
+    }
+
 
     public String toString() {
         StringBuilder boardString = new StringBuilder();
@@ -516,6 +522,7 @@ public class ChessBoard {
         TrackOfPieces.remove(from);
         TrackOfPieces.put(to, piece);
     }
+
 
     private void undoTemporaryMove(Square from, Square to, Piece piece) {
         TrackOfPieces.remove(to);
@@ -695,6 +702,10 @@ public class ChessBoard {
             moveHistoryArea.append(s + "\n");
         }
         moveHistory.clear();
+    }
+
+    public HashMap<Square, Piece> getTrackOfPieces() {
+        return TrackOfPieces;
     }
 }
 
